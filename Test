@@ -1,0 +1,107 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- 1. Создание основного контейнера GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DebugPanelGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- 2. Главное окно (Frame)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+-- Скругление углов
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 8)
+uiCorner.Parent = mainFrame
+
+-- Заголовок
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, 0, 0, 35)
+titleLabel.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+titleLabel.Text = "Панель разработчика"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 14
+titleLabel.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleLabel
+
+-- 3. Кнопка сброса/тестирования скорости
+local testButton = Instance.new("TextButton")
+testButton.Name = "SpeedButton"
+testButton.Size = UDim2.new(0.9, 0, 0, 35)
+testButton.Position = UDim2.new(0.05, 0, 0.3, 0)
+testButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+testButton.Text = "Изменить скорость бега"
+testButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+testButton.Font = Enum.Font.Gotham
+testButton.TextSize = 14
+testButton.Parent = mainFrame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 6)
+btnCorner.Parent = testButton
+
+-- Логика переключения скорости для локального тестирования
+local isBoosted = false
+testButton.MouseButton1Click:Connect(function()
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") then
+        isBoosted = not isBoosted
+        character.Humanoid.WalkSpeed = isBoosted and 32 or 16
+        testButton.Text = isBoosted and "Скорость: 32 (Быстро)" or "Скорость: 16 (Обычно)"
+    end
+end)
+
+-- 4. Логика перетаскивания окна (Drag and Drop)
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+titleLabel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleLabel.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
